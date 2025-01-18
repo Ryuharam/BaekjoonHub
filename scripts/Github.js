@@ -92,6 +92,16 @@ async function getReference(hook, token, branch = 'main') {
  * @return {Promise} - the promise for the tree_item object
  */
 async function createBlob(hook, token, content, path) {
+  // 디렉토리 정보 가져오기
+  const directory = await new Promise((resolve) => {
+    chrome.storage.local.get('BaekjoonHub_directory', (data) => {
+      resolve(data.BaekjoonHub_directory || ''); // 기본값은 빈 문자열
+    });
+  });
+
+  // 디렉토리 경로를 파일 경로에 추가
+  const fullPath = directory ? `${directory}/${path}` : path;
+
   return fetch(`https://api.github.com/repos/${hook}/git/blobs`, {
     method: 'POST',
     body: JSON.stringify({ content: b64EncodeUnicode(content), encoding: 'base64' }),
@@ -99,7 +109,7 @@ async function createBlob(hook, token, content, path) {
   })
     .then((res) => res.json())
     .then((data) => {
-      return { path, sha: data.sha, mode: '100644', type: 'blob' };
+      return { fullPath, sha: data.sha, mode: '100644', type: 'blob' };
     });
 }
 
@@ -112,9 +122,22 @@ async function createBlob(hook, token, content, path) {
  * @return {Promise} - the promise for the tree sha
  */
 async function createTree(hook, token, refSHA, tree_items) {
+   // 디렉토리 정보 가져오기
+   const directory = await new Promise((resolve) => {
+    chrome.storage.local.get('BaekjoonHub_directory', (data) => {
+      resolve(data.BaekjoonHub_directory || ''); // 기본값은 빈 문자열
+    });
+  });
+
+  // 각 경로에 디렉토리 추가
+  const updatedTreeItems = tree_items.map((item) => ({
+    ...item,
+    path: directory ? `${directory}/${item.path}` : item.path,
+  }));
+
   return fetch(`https://api.github.com/repos/${hook}/git/trees`, {
     method: 'POST',
-    body: JSON.stringify({ tree: tree_items, base_tree: refSHA }),
+    body: JSON.stringify({ tree: updatedTreeItems, base_tree: refSHA }),
     headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'content-type': 'application/json' },
   })
     .then((res) => res.json())

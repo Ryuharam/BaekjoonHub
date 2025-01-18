@@ -230,6 +230,9 @@ $('#hook_button').on('click', () => {
     $('#success').text('Attempting to create Hook... Please wait.');
     $('#success').show();
 
+    // 디렉토리 경로 가져오기
+    const directory = $('#directory').val().trim();
+
     /* 
       Perform processing
       - step 1: Check if current stage === hook.
@@ -246,6 +249,10 @@ $('#hook_button').on('click', () => {
         $('#success').hide();
       } else if (option() === 'new') {
         createRepo(token, repositoryName());
+        //  디렉토리 경로 저장
+        chrome.storage.local.set({ BaekjoonHub_directory: directory }, () => {
+          console.log('Directory saved:', directory);
+        });
       } else {
         chrome.storage.local.get('BaekjoonHub_username', (data2) => {
           const username = data2.BaekjoonHub_username;
@@ -256,6 +263,10 @@ $('#hook_button').on('click', () => {
             $('#success').hide();
           } else {
             linkRepo(token, `${username}/${repositoryName()}`, false);
+            // 디렉토리 경로 저장
+            chrome.storage.local.set({ BaekjoonHub_directory: directory }, () => {
+              console.log('Directory saved:', directory);
+            });
           }
         });
       }
